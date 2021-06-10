@@ -10,9 +10,9 @@ const app = express()
 
 app.use(express.json())
 app.use(eventRouter)
-// app.use(teacherRouter)
-// app.use(studentRouter)
-// app.use(courseRouter)
+app.use(teacherRouter)
+app.use(studentRouter)
+app.use(courseRouter)
 
 app.listen(port, () => {
     console.log('Server up on port:', port)

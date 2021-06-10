@@ -6,17 +6,16 @@ const taskSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    // creatorID: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     default: false,
-    //     required: true,
-    //     refPath: 'onModel'
-    // },
-    // onModel: {
-    //     type: String,
-    //     required: true,
-    //     enum: ['student', 'teacher']
-    // },
+    creatorID: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        refPath: 'onModel'
+    },
+    onModel: {
+        type: String,
+        required: true,
+        enum: ['students', 'teachers']
+    },
     start_date: {
         type: Date,
         required: true,
@@ -33,10 +32,10 @@ const taskSchema = new mongoose.Schema({
     institution: {
         type: String,
         required: true
-    },
-    media: {
-        type: Buffer
     }
+    // imgCount: {
+    //     type: Number
+    // }
 }, {
     timestamps: true
 })
