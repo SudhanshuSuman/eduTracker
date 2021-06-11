@@ -2,7 +2,11 @@ const express = require('express')
 const router = express.Router()
 const Student = require('../models/Student')
 const Course = require('../models/Course')
-const auth = require('../middleware/auth')
+const auth = require('../middleware/authStudent')
+const authC = require('../middleware/auth')
+const fs = require('fs')
+const multer = require('multer')
+const path = require('path')
 // const { ObjectID } = require('mongodb')
 
 
@@ -101,9 +105,6 @@ router.post('/student/enrollment', auth, async (req, res) => {
         console.log(course)
         res.send(course)
 
-
-
-
     } catch (e) {
         console.log("Error", e)
         res.status(400).send(e)
@@ -161,8 +162,6 @@ router.delete('/student/deleteCourse', auth, async (req, res) => {
         console.log(e)
         res.status(500).send(e)
     }
-
-
 })
 
 // 5. ALL ENROLLED COURSE
@@ -224,16 +223,100 @@ router.get('/student/getcourses', auth, async (req, res) => {
     }
 })
 
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dirPath = './course/notes/' + req.params.id
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath)
+        }
+        cb(null, dirPath)
+    },
+    filename: (req, file, cb) => {
 
+        console.log(file.originalname)
+        cb(null, Date.now() + '_' + file.originalname)
+    }
+})
 
+const upload = multer({
+    limits: {
+        fileSize: 100 * 1024 * 1024
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(pdf|doc)$/)) {
+            return cb(new Error('Allowed file extensions: *.pdf/*.doc'))
+        }
+        cb(undefined, true)
+    },
+    storage
+})
 
+const verifyAccess = async (req, res, next) => {
+    try {
+        const course = await Course.findOne({ _id: req.params.id })
+        if(!course) {
+            res.status(404).send('No such course exists!')
+        } else {
+            const enrolled = course.access.includes(req.user._id) || course.owner.equals(req.user._id)
+            if(!enrolled) {
+                res.status(401).send('No access course with id ' + req.params.id + ' found')
+            } else {
+                next()
+            }
+        }
 
+    } catch (e) {
+        res.status(500).send()
+    }
 
+    // next()
+}
 
+router.post('/course/file/:id/upload', authC, verifyAccess, upload.single('notes'), async (req, res) => {
+    try {
+        res.status(200).send()
+    } catch (e) {
+        res.status(500).send(e)
+    }
+})
 
+router.get('/course/:id/file/list', authC, verifyAccess, async (req, res) => {
+    try {
+        // const course = await Course.findOne({ _id: req.params.id })
+        // if(!course) {
+        //     res.status(404).send('No such course exists!')
+        // }
+        // const enrolled = course.access.includes(req.user._id)
+        // if(!enrolled) {
+        //     res.status(503).send('Not enrolled in the course with id ' + req.params.id)
+        // }
+        const dirPath = './course/notes/' + req.params.id
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath)
+        }
+        const files = fs.readdirSync(dirPath)
+        res.status(200).send({ fileNameList: files, fileCount: files.length })
+    } catch (e) {
+        console.log(e)
+        res.status(500).send()
+    }
+})
 
+router.get('/course/file/:id/:fileName', authC, verifyAccess, async (req, res) => {
+    try {
+        // const course = await Course.findOne({ _id: req.params.id, access: req.user._id })
+        // if(!course) {
+        //     res.status(404).send('No enrolled course with id ' + req.params.id + ' found')
+        // }
+        var id = req.params.id
+        var file = req.params.fileName
 
+        const filePath = path.resolve('course/notes/' + id + '/' + file)
 
-
+        res.sendFile(filePath)
+    } catch (e) {
+        res.status(e).send()
+    }
+})
 
 module.exports = router

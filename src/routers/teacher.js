@@ -8,7 +8,7 @@ const Course = require('../models/Course')
 
 //1. CREATING THE TEACHER
 router.post('/teacher', async (req, res) => {
-    console.log(req.body)
+    // console.log(req.body)
 
     const user = new Teacher(req.body)
     try {
