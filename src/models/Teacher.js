@@ -69,7 +69,7 @@ teacherSchema.statics.findByCredentials = async(email , password) => {
 
 teacherSchema.methods.generateTokens = async  function(){
     const user = this
-    console.log(user)
+    console.log('teacher')
     const token =  jwt.sign({_id : user._id.toString()} , "thiscourseisshit")
     user.tokens = user.tokens.concat({token})
     await user.save()

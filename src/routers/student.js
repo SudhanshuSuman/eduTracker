@@ -55,62 +55,33 @@ router.post('/student/logout', auth, async (req, res) => {
 
 //4. ENROLLMENT IN THE COURSES
 
-router.post('/student/enrollment', auth, async (req, res) => {
-    // try{
-    //     const course = await Course.findOne({name:req.body.name , id: req.body.id })
-
-    //     if(!course)
-    //         throw new Error("No such course is found. Enter Again!!  or aleady Resgisted")
-
-    //     //If already Enrolled
-    //     const enrolled = (course.access.includes(req.user._id))
-
-
-    //     if(enrolled)
-    //         throw new Error("Aready Entolled in course")
-
-    //     req.user.enrolledCourse = req.user.enrolledCourse.concat(course)
-    //     await req.user.save()
-
-
-
-    //     course.access =  course.access.concat(req.user)
-    //     await course.save()
-
-
-
-    //     res.status(200).send(course)
-    //     console.log(req.user)
-
-    // }catch(error){
-    //     console.log(error)
-    //     res.status(400).send(error)
-    // }
-    try {
-
-        const course = await Course.findOne({ id: req.body.id })
+router.post('/student/enrollment' , auth , async(req, res) => {
+    try{
+    
+        const course = await Course.findOne({name:req.body.name , id:req.body.id})
         console.log(course)
-
+    
         // await course.populate('access').execPopulate()
-
-        console.log(course.access.indexOf(req.user._id))
-        if (course.access.indexOf(req.user._id) >= 0) {
+    
+         console.log(course.access.indexOf(req.user._id))
+        if(course.access.indexOf(req.user._id)>=0){
             throw new Error('Aready Registed')
-        } else {
+        }else{
             course.access = course.access.concat(req.user)
-            course.attendance = course.attendance.concat({ usn: req.user.USN, dates: [] })
+            course.attendAndMarks = course.attendAndMarks.concat({usn : req.user.USN , dates : [] , marks :[]})
             await course.save()
         }
-
+    
         console.log(course)
         res.send(course)
-
-    } catch (e) {
-        console.log("Error", e)
+        
+    
+        
+    
+    }catch(e){
+        console.log("Error" , e)
         res.status(400).send(e)
     }
-
-
 })
 
 //4. DELETION IN THE COURSES
@@ -223,6 +194,8 @@ router.get('/student/getcourses', auth, async (req, res) => {
     }
 })
 
+
+// For multer(file uploads)
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dirPath = './course/notes/' + req.params.id
@@ -237,7 +210,7 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + '_' + file.originalname)
     }
 })
-
+// File: Maximum size: 100 MB, Allowed types: .pdf, .doc
 const upload = multer({
     limits: {
         fileSize: 100 * 1024 * 1024
@@ -251,6 +224,7 @@ const upload = multer({
     storage
 })
 
+// Middleware to verify user access to course notes/files
 const verifyAccess = async (req, res, next) => {
     try {
         const course = await Course.findOne({ _id: req.params.id })
@@ -272,6 +246,7 @@ const verifyAccess = async (req, res, next) => {
     // next()
 }
 
+// Upload some notes(allowed extensions: .pdf, .doc)
 router.post('/course/file/:id/upload', authC, verifyAccess, upload.single('notes'), async (req, res) => {
     try {
         res.status(200).send()
@@ -280,16 +255,10 @@ router.post('/course/file/:id/upload', authC, verifyAccess, upload.single('notes
     }
 })
 
+
+// Get list of all the files in the course
 router.get('/course/:id/file/list', authC, verifyAccess, async (req, res) => {
     try {
-        // const course = await Course.findOne({ _id: req.params.id })
-        // if(!course) {
-        //     res.status(404).send('No such course exists!')
-        // }
-        // const enrolled = course.access.includes(req.user._id)
-        // if(!enrolled) {
-        //     res.status(503).send('Not enrolled in the course with id ' + req.params.id)
-        // }
         const dirPath = './course/notes/' + req.params.id
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath)
@@ -302,6 +271,8 @@ router.get('/course/:id/file/list', authC, verifyAccess, async (req, res) => {
     }
 })
 
+
+// Get a file from the course. File names obtained from the get list of files request can be used to get a particular file.
 router.get('/course/file/:id/:fileName', authC, verifyAccess, async (req, res) => {
     try {
         // const course = await Course.findOne({ _id: req.params.id, access: req.user._id })

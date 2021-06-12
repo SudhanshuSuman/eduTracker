@@ -53,16 +53,18 @@ studentSchema.virtual('course' , {
 //2. Logging In
 
 
-studentSchema.statics.findByCredentials = async(email , password , USN) => {
+// studentSchema.statics.findByCredentials = async(email , password , USN) => {
+studentSchema.statics.findByCredentials = async(email , password) => {
     const user = await Student.findOne({email})
     if(!user){
         throw new Error("Unable to Login")
     }
 
     const isMatchpass = password === user.password
-    const isMatchUSN = USN === user.USN
+    // const isMatchUSN = USN === user.USN
     // console.log(isMatchUSN , isMatchpass)
-    if(!isMatchpass || !isMatchUSN){
+    // if(!isMatchpass || !isMatchUSN){
+    if(!isMatchpass){
         throw new Error("Unable to Login")
     }
 
@@ -73,7 +75,7 @@ studentSchema.statics.findByCredentials = async(email , password , USN) => {
 //Generating Tokens
 studentSchema.methods.generateTokens = async  function(){
     const user = this
-    
+    console.log('student')
     const token =  jwt.sign({_id : user._id.toString()} , "thiscourseisshit")
     user.tokens = user.tokens.concat({token})
     await user.save()

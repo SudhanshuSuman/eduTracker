@@ -25,7 +25,7 @@ const courseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student'
     }],
-    attendance: [{
+    attendAndMarks: [{
         usn: {
             type: String,
         },
@@ -36,6 +36,14 @@ const courseSchema = new mongoose.Schema({
             present: {
                 type: Boolean,
                 default: false
+            }
+        }],
+        marks : [{
+            examType : {
+                type : String
+            },
+            score: {
+                type : Number
             }
         }]
     }]

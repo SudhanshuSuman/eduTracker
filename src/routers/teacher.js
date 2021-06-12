@@ -218,48 +218,126 @@ router.patch('/teacher/update', authT, async (req, res) => {
 })
 
 
-// Attendance: Query: ?present=true/false
-router.post('/course/:id/attendance/:usn/:date', authT, async (req, res) => {
+// attendAndMarks: Query: ?present=true/false
+router.post('/course/:id/attendAndMarks/:usn/:date', authT, async (req, res) => {
+    console.log(req.params)
     try {
         const course = await Course.findOne({ id: req.params.id })
+        console.log(course)
         if (!course) {
             throw new Error('Course with id ' + req.params.id + ' does not exist')
         }
 
-        const index = course.attendance.findIndex(student => student.usn === req.params.usn)
+        const index = course.attendAndMarks.findIndex(student => student.usn === req.params.usn)
         if (index === -1) {
             throw new Error('No student with USN ' + req.params.usn + ' found')
         }
-        course.attendance[index].dates = course.attendance[index].dates.concat({ date: req.params.date, present: (req.query.present === 'true' ? true:false) })
+        course.attendAndMarks[index].dates = course.attendAndMarks[index].dates.concat({ date: req.params.date, present: (req.query.present === 'true' ? true:false) })
 
         await course.save()
-        res.status(200).send(course.attendance[index])
+        res.status(200).send(course.attendAndMarks[index])
     } catch (e) {
         console.log(e);
         res.status(500).send(e)
     }
 })
 
-
-router.get('/course/:id/attendance/:usn', async (req, res) => {
+// Get attendance record of a student
+router.get('/course/:id/attendAndMarks/:usn', async (req, res) => {
     try {
         const course = await Course.findOne({ id: req.params.id })
         if (!course) {
             throw new Error('Course with id ' + req.params.id + ' does not exist')
         }
 
-        const index = course.attendance.findIndex(student => student.usn === req.params.usn)
+        const index = course.attendAndMarks.findIndex(student => student.usn === req.params.usn)
         if (index === -1) {
             throw new Error('No student with USN ' + req.params.usn + ' found')
         }
-        const present = course.attendance[index].dates.filter(date => date.present).length
-        const absent = course.attendance[index].dates.length - present
+        const present = course.attendAndMarks[index].dates.filter(date => date.present).length
+        const absent = course.attendAndMarks[index].dates.length - present
 
-        res.status(200).send({ ...course.attendance[index].dates, present, absent, totalLectures: present+absent })
+        res.status(200).send({ ...course.attendAndMarks[index].dates, present, absent, totalLectures: present+absent })
         
     } catch (e) {
         res.status(500).send(e)
     }
+})
+
+// SCORING THE MARKS
+
+router.post('/course/:id/scoring/:usn/:examType/:marks' , authT , async(req , res) =>{
+    try{
+        const course = await Course.findOne({ id: req.params.id })
+        if(!course){
+            throw new Error('No such course is found')
+        }
+        const index = course.attendAndMarks.findIndex(student => student.usn === req.params.usn)
+        if (index === -1) {
+            throw new Error('No student with USN ' + req.params.usn + ' found')
+        }
+        console.log(index)
+        course.attendAndMarks[index].marks = course.attendAndMarks[index].marks.concat({examType : req.params.examType.toLowerCase() , score:req.params.marks})
+        
+        await course.save()
+
+        res.status(200).send(course.attendAndMarks)
+
+    }catch(e){
+        console.log(e)
+        res.status(500).send(e)
+    }
+
+})
+
+router.get('/course/:id/getscore/:usn', async(req , res)=>{
+    try{
+
+        const course = await Course.findOne({ id: req.params.id })
+        if(!course){
+            throw new Error('No such course is found')
+        }
+        const index = course.attendAndMarks.findIndex(student => student.usn === req.params.usn)
+        if (index === -1) {
+            throw new Error('No student with USN ' + req.params.usn + ' found')
+        }
+
+        let score = 0;
+        let total = 0;
+        let allscore = [] 
+        for(var i =0 , l =course.attendAndMarks[index].marks.length ;i<l ; i++){
+            let mark = course.attendAndMarks[index].marks[i]
+            allscore.push({"Exam" :mark.examType , "Marks" : mark.score})
+            if(mark.examType.startsWith('q') ){
+                total += 15
+                score += mark.score
+            }
+            else if(mark.examType.startsWith('i')){
+                total += 50
+                score += mark.score
+            }
+
+            else if (mark.examType.startsWith('e')) {
+                total += 100
+                score += mark.score
+            }
+        }
+
+            const analysis = {
+                "score" : score,
+                "total" : total,
+                "Current Percentage" : (score / total) * 100
+            }
+   
+            res.status(200).send({allscore , analysis })
+        
+
+
+    }catch(e){
+        console.log(e)
+        res.status(500).send(e)
+    }
+
 })
 
 
