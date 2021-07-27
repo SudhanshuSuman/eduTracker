@@ -10,7 +10,8 @@ const { findOne } = require('../models/Event')
 
 const router = express.Router()
 
-// Create Event: // Authorization to be added
+
+// Create an Event (Student/Teacher)
 router.post('/event', auth, async (req, res) => {
     const event = new Event(req.body)
     event.creatorID = mongoose.Types.ObjectId(req.user._id)
@@ -24,11 +25,15 @@ router.post('/event', auth, async (req, res) => {
     }
 })
 
+
+// Update an Esvent's details
 router.patch('/event/:id', auth, async (req, res) => {
+
+    // Valid fields for update
     const allowedUpdates = ['description', 'start_date', 'end_date', 'last_date_reg', 'links', 'institution']
     const updates = Object.keys(req.body)
     const validRequest = updates.every((update) => allowedUpdates.includes(update))
-    if(!validRequest) {
+    if (!validRequest) {
         return res.status(400).send({ error: 'Cannot update one or more specified fields!' })
     }
 
@@ -45,6 +50,8 @@ router.patch('/event/:id', auth, async (req, res) => {
     }
 })
 
+
+// for uploading media using multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dirPath = './event/images/' + req.params.id
@@ -53,16 +60,19 @@ const storage = multer.diskStorage({
         }
         cb(null, './event/images/' + req.params.id)
     },
+
+    // for custom filenames(filename of uploaded images would be 0.png, 1.png, 2.png...)
     filename: async (req, file, cb) => {
 
+        // image for an event will be saved in a directory named after the _id of that event
         const dirPath = './event/images/' + req.params.id
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath)
         }
         const files = fs.readdirSync(dirPath)
-        var lastFileName = files[files.length-1]
+        var lastFileName = files[files.length - 1]
         // console.log(lastFileName);
-        if(!lastFileName) {
+        if (!lastFileName) {
             lastFileName = '0.png'
         }
         lastFileName = (Number(lastFileName.slice(0, -4)) + 1).toString()
@@ -71,6 +81,7 @@ const storage = multer.diskStorage({
     }
 })
 
+// Images: Maximum size: 6 MB, Allowed image extensions: .jpg, jpeg, png
 const upload = multer({
     limits: {
         fileSize: 6 * 1024 * 1024
@@ -84,6 +95,7 @@ const upload = multer({
     storage
 })
 
+// Middleware to run before uploading an image for an Event
 const imgCheckMiddleware = async (req, res, next) => {
     try {
         // const exists = await Event.exists({ _id: (req.params.id) })
@@ -94,7 +106,7 @@ const imgCheckMiddleware = async (req, res, next) => {
         // }
 
         const event = await Event.findOne({ _id: req.params.id, creatorID: req.user._id })
-        if(!event) {
+        if (!event) {
             return res.status(404).send({ error: 'No such event found' })
         }
         // console.log(event, req.user._id)
@@ -103,7 +115,7 @@ const imgCheckMiddleware = async (req, res, next) => {
         res.status(400).send(e)
     }
 
-
+    // To make sure that the total number of images of an Event do not exceed a given number(here 4)
     // if(fs.existsSync(dirPath) && !(4-fs.readdirSync(dirPath).length >= req.files.length)) {
     //     return res.status(400).send({ error: '4 images are allowed at most!!!' })
     // }
@@ -119,6 +131,7 @@ const imgCheckMiddleware = async (req, res, next) => {
     next()
 }
 
+// finally upload the images to Event
 router.post('/event/:id/media', auth, imgCheckMiddleware, upload.array('images', 5), async (req, res) => {
 
     // for(img in req.files) {
@@ -130,9 +143,11 @@ router.post('/event/:id/media', auth, imgCheckMiddleware, upload.array('images',
     res.status(500).send({ error: error.message })
 })
 
-// Display all events. queries:
+
+// Display all Events (No authentication required)
+// Queries:
 // sortBy=field-asc/desc
-// upcoming=false(by would be true by default)
+// upcoming=false(would be true by default)
 // institution=institutionName
 router.get('/event', async (req, res) => {
     const toMatch = {}
@@ -179,6 +194,8 @@ router.get('/event', async (req, res) => {
     }
 })
 
+
+// Get an image of an Event using an id (No authentication required)
 router.get('/events/images/:id/:file', (req, res) => {
     try {
         var id = req.params.id
@@ -193,10 +210,12 @@ router.get('/events/images/:id/:file', (req, res) => {
     }
 })
 
+
+// Delete images of an Event
 router.delete('/event/images/:id', auth, async (req, res) => {
     try {
         const event = await Event.findOne({ _id: req.params.id, creatorID: req.user._id })
-        if(!event) {
+        if (!event) {
             throw new Error('No event with id ' + req.params.id + ' found')
         }
 
@@ -215,6 +234,8 @@ router.delete('/event/images/:id', auth, async (req, res) => {
     }
 })
 
+
+// Delete an Event
 router.delete('/event/:id', auth, async (req, res) => {
     try {
         const event = await Event.findOneAndDelete({ _id: req.params.id, creatorID: req.user._id })

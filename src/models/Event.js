@@ -33,9 +33,6 @@ const taskSchema = new mongoose.Schema({
         type: String,
         required: true
     }
-    // imgCount: {
-    //     type: Number
-    // }
 }, {
     timestamps: true
 })

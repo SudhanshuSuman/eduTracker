@@ -8,6 +8,7 @@ const courseSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
     id: {
         type: String,
         required: true,
@@ -15,16 +16,17 @@ const courseSchema = new mongoose.Schema({
         unique: true
     },
 
-
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'Teacher',
     },
+
     access: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student'
     }],
+
     attendAndMarks: [{
         usn: {
             type: String,
@@ -38,12 +40,12 @@ const courseSchema = new mongoose.Schema({
                 default: false
             }
         }],
-        marks : [{
-            examType : {
-                type : String
+        marks: [{
+            examType: {
+                type: String
             },
             score: {
-                type : Number
+                type: Number
             }
         }]
     }]

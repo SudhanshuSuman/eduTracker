@@ -6,9 +6,9 @@ const auth = require('../middleware/auth')
 
 router.post('/login', async (req, res) => {
     try {
-        const teacher = await Teacher.findOne({email: req.body.email, password: req.body.password})
+        const teacher = await Teacher.findOne({ email: req.body.email, password: req.body.password })
         var role = 'teacher'
-        if(!teacher) {
+        if (!teacher) {
             const student = await Student.findByCredentials(req.body.email, req.body.password)
             var token = await student.generateTokens()
             role = 'student'

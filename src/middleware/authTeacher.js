@@ -8,7 +8,7 @@ const authTeacher = async (req, res, next) => {
         const decode = jwt.verify(token, 'thiscourseisshit')
         console.log(decode)
         // decoded token has an id property set in it as given during encription
-        //tokens.token : token is to verify if the user has the token or not if it has expired or not
+        // tokens.token : token is to verify if the user has the token or not if it has expired or not
         const user = await Teacher.findOne({ _id: decode._id, 'tokens.token': token })
 
         if (!user) {
